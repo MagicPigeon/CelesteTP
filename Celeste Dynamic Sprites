@@ -1,0 +1,96 @@
+// ==UserScript==
+// @name            Celeste Dynamic Sprites FPS
+// @description     Changes the FPS of a SpriteClip to a specified value
+// @version         0.0.2
+// @include         https://tagpro.koalabeast.com/game
+// @include         *://tagpro-maptest-*.koalabeast.com*
+// @updateURL       https://gist.github.com/nabbynz/f293ee84dfdfa1405f1f214cf64a30e2/raw/Dynamic Sprites FPS.user.js
+// @downloadURL     https://gist.github.com/nabbynz/f293ee84dfdfa1405f1f214cf64a30e2/raw/Dynamic Sprites FPS.user.js
+// @grant           none
+// @author          nabby
+// ==/UserScript==
+
+console.log('START: ' + GM_info.script.name + ' (v' + GM_info.script.version + ' by ' + GM_info.script.author + ')');
+
+
+//Example Custom Texture Links...
+//MP01: https://i.imgur.com/ausTMAS.png (speedpad white 40fps/0.75, tints:0xffff00/0xff0000/0x0080ff) (Y:EOJUlFo, R:9YOUGGS, B:uf7SKaC)
+//MP02: https://i.imgur.com/w2zIDdM.png (speedpad white 40fps/0.75, tints:0xffff00/0xff0000/0x0080ff)
+
+const options = {
+    5: { //speedpad
+        TARGET_ENABLED: true, //false to disable.
+        TARGET_FPS: 25, //how many times per second the animation will be updated.
+        TARGET_SCALE: 1, //If the image is NOT 30px then scale it by this amount (a value between 0 - 1). Set to 1 for no scaling. e.g.: a 40px image should be set to 0.75 to give a 30px speedpad.
+        TARGET_TINT: 0x27ff4f, //Use this to tint the image. Set to 0xFFFFFF for no tint. Image should be white for tinting to work best.
+    },
+    14: { //speedpadRed
+        TARGET_ENABLED: true,
+        TARGET_FPS: 25,
+        TARGET_SCALE: 1,
+        TARGET_TINT: 0xfe2fb3,
+    },
+    15: { //speedpadBlue
+        TARGET_ENABLED: true,
+        TARGET_FPS: 25,
+        TARGET_SCALE: 1,
+        TARGET_TINT: 0x00effe,
+    },
+    13: { //portal
+        TARGET_ENABLED: true,
+        TARGET_FPS: 25,
+        TARGET_SCALE: 1,
+        TARGET_TINT: 0xffffff,
+    },
+};
+
+
+
+tagpro.ready(function() {
+    let TARGET_TILES = [];
+
+    Object.keys(options).forEach(key => {
+        if (options[key].TARGET_ENABLED) {
+            TARGET_TILES.push(+key);
+            options[key].TARGET_OFFSET = (40 - (40 * options[key].TARGET_SCALE)) / 2;
+        }
+    });
+
+    tagpro.renderer.drawAnimation = function(tile, drawPos) {
+        let tileId = Math.floor(tagpro.map[Math.ceil(drawPos.x / 40)][Math.ceil(drawPos.y / 40)]); //Math.ceil is to stop a bug created in Preset Mods for bombs and pups
+        let textures = tile.textures || tile.frameTiles.map(function(id) { return tagpro.tiles.getTexture(id); });
+        let clip = new PIXI.SpriteClip(textures, false);
+
+        clip.fps = 4;
+        clip.x = drawPos.x;
+        clip.y = drawPos.y;
+        clip.alpha = tile.alpha;
+        clip.roundPixels = true;
+
+        if (TARGET_TILES.indexOf(tileId) >= 0) {
+            if (!tile.blink) {
+                clip.fps = options[tileId].TARGET_FPS + Math.random() * 5;
+            }
+
+            if (options[tileId].TARGET_SCALE !== 1) {
+                clip.scale = { x:options[tileId].TARGET_SCALE, y:options[tileId].TARGET_SCALE };
+                clip.x = drawPos.x + options[tileId].TARGET_OFFSET;
+                clip.y = drawPos.y + options[tileId].TARGET_OFFSET;
+            }
+
+            if (options[tileId].TARGET_TINT !== 0xFFFFFF) {
+                clip.tint = options[tileId].TARGET_TINT;
+            }
+
+        } else {
+            if (!tile.blink) {
+                clip.fps = 6 + Math.random() / 10;
+            }
+        }
+
+        clip.play();
+        tagpro.renderer.layers.midground.addChild(clip);
+        return clip;
+    };
+
+}); //tagpro.ready()
