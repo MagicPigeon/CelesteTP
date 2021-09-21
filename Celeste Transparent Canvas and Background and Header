@@ -1,0 +1,28 @@
+// ==UserScript==
+// @name         Tagpro Transparent Canvas and Background and Header
+// @author       NewCompte, Catalyst
+// @match        *://*.koalabeast.com/game*
+// @include      https://tagpro.koalabeast.com/*
+// @grant       GM_addStyle
+// ==/UserScript==
+
+var url="https://i.imgur.com/KbYRx1g.jpg"; //https://i.imgur.com/UDK5JNT.jpg
+
+if (!/game*/.test(location.pathname) || /games/.test(location.pathname)){
+    GM_addStyle ('#header {background: #2b2b2b url('+url+') no-repeat top !important;}');
+}
+else{
+    $('html').css({'background-image':'url('+url+')'});
+
+    tagpro.ready(function () {
+        var oldCanvas = $(tagpro.renderer.canvas);
+        var newCanvas = $('<canvas id="viewport" width="1280" height="800"></canvas>');
+        oldCanvas.after(newCanvas);
+        oldCanvas.remove();
+        tagpro.renderer.canvas = newCanvas.get(0);
+        tagpro.renderer.options.transparent = true;
+        tagpro.renderer.renderer = tagpro.renderer.createRenderer();
+        tagpro.renderer.resizeAndCenterView();
+        newCanvas.show();
+    });
+}
